@@ -160,6 +160,8 @@ namespace Discord_Bot.StartUp
             poster = new User(command.User); // Save the original author of this command
             posterId = command.User.Id;
 
+            
+
             switch (command.Data.Name)
             {
                 // Create a post
@@ -217,12 +219,29 @@ namespace Discord_Bot.StartUp
             
         }
 
+
+
+        private async void SendDM(IDMChannel channel, int time)
+        {
+
+           await Task.Delay(time);
+           await channel.SendMessageAsync("Your TVT has started now");
+           
+        }
         public async Task MyButtonHandler(SocketMessageComponent component)
         {
+            ulong id = component.User.Id;
+            IUser user = client.GetUserAsync(id).Result;
+            var channel = await user.CreateDMChannelAsync();
+            
+
+
             switch (component.Data.CustomId)
             {
                 case "custom-id":
-                    await component.RespondAsync($"{component.User.Mention} has clicked the button");
+                    SendDM(channel, 20000);
+                    await component.RespondAsync($"You will be reminded 😀", null, false, true);
+                    
                     break;
             }
         }
