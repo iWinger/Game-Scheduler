@@ -27,11 +27,18 @@ namespace Discord_Bot.Game
             Post = post;
         }
 
-        public void setId(ulong Id)
+        public void setId(ulong id)
         {
-            this.Id = Id;
+            this.Id = id;
         }
-        public string GetName() { return this.Name; }
+
+        public void setName(string name)
+        {
+            this.Name = name;
+        }
+
+        public Post getPost() { return this.Post; }
+        public string getName() { return this.Name; }
         public ulong getId() { return this.Id; }
     }
 }
