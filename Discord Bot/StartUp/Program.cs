@@ -4,6 +4,7 @@ using Discord.WebSocket;
 using Discord_Bot.Game;
 using Discord_Bot.Games;
 using Newtonsoft.Json;
+using System.ComponentModel;
 using System.Windows.Markup;
 
 namespace Discord_Bot.StartUp
@@ -12,13 +13,14 @@ namespace Discord_Bot.StartUp
     {
 
         private readonly DiscordSocketClient client;
-        private const string token = "MTI4NDI4MjI0MjQ5OTIxOTU1MQ.Gyk4fL.zqaJiMFUtXIaCncAVMEesM1gNAbMUDk7gir0Og";
+        private const string token = "MTI4NDI4MjI0MjQ5OTIxOTU1MQ.Gs57p4.xaPzrQ6TPYBaXQzXQLCZkROT9Sp6wOBa7adeQg";
         private IMessageChannel channel;
         private User poster { get; set; }
         private ulong posterId { get; set; }
         private Repository repository;
         private Dictionary<ulong, Post> dict;
-        private int time = 0;
+        private int minutes = 0;
+    
 
 
         public Program()
@@ -50,14 +52,13 @@ namespace Discord_Bot.StartUp
         public async Task Client_Ready()
         {
             ulong testGuild = 1202800312499572776; // A test guild for now (server)
+            //ulong testGuild = 713948595165986847;
 
 
             var guild = client.GetGuild(testGuild);
 
-            var guildCommand = new SlashCommandBuilder().WithName("tvt").WithDescription("Starting a TVT").AddOption("minutes", ApplicationCommandOptionType.String, "the value to set the field", isRequired: true);
-            guildCommand.WithDescription("Starting a TVT");
-
-
+            var tvtCommand = new SlashCommandBuilder().WithName("tvt").WithDescription("Starting a TVT").AddOption("minutes", ApplicationCommandOptionType.String, "the value to set the field", isRequired: true);
+        
             /*
             var statsCommand = new SlashCommandBuilder();
             statsCommand.WithName("stats");
@@ -67,6 +68,8 @@ namespace Discord_Bot.StartUp
             var bossCommand = new SlashCommandBuilder().WithName("boss").WithDescription("Starting a Boss war").AddOption("minutes", ApplicationCommandOptionType.String, "the value to set the field", isRequired: true);
 
             var mbCommand = new SlashCommandBuilder().WithName("mb").WithDescription("Starting a MB").AddOption("minutes", ApplicationCommandOptionType.String, "the value to set the field", isRequired: true);
+
+            var deleteCommand = new SlashCommandBuilder().WithName("delete").WithDescription("Deleting your active post");
 
             var statusCommand = new SlashCommandBuilder();
             statusCommand.WithName("status");
@@ -82,10 +85,11 @@ namespace Discord_Bot.StartUp
 
             try
             {
-                await guild.CreateApplicationCommandAsync(guildCommand.Build());
+                await guild.CreateApplicationCommandAsync(tvtCommand.Build());
                 //await guild.CreateApplicationCommandAsync(statsCommand.Build());
                 await guild.CreateApplicationCommandAsync(bossCommand.Build());
                 await guild.CreateApplicationCommandAsync(mbCommand.Build());
+                await guild.CreateApplicationCommandAsync(deleteCommand.Build());
                 await guild.CreateApplicationCommandAsync(statusCommand.Build());
 
                 //await client.CreateGlobalApplicationCommandAsync(globalCommand.Build());
@@ -136,9 +140,9 @@ namespace Discord_Bot.StartUp
         }
       
 
-        private void createPost(SocketMessage msg, ActionRowComponent reminder)
+        private void createPost(SocketMessage msg, ActionRowComponent reminder, int minutes)
         {
-            Post post = new Post(poster,msg, reminder); // Save the socket message ID into the post 
+            Post post = new Post(poster,msg, reminder, DateTime.Now,minutes); // Save the socket message ID into the post 
             post.AddUser(poster);
             var key = posterId; 
 
@@ -148,6 +152,21 @@ namespace Discord_Bot.StartUp
                 dict.Add(key, post);
             }
            
+        }
+
+        private async void deletePost(SocketSlashCommand command, ulong posterId)
+        {   
+            
+            var key = posterId;
+            
+            if (dict.ContainsKey(posterId)){
+                dict.Remove(posterId);
+                await command.RespondAsync($"You have successfully deleted your post 😀", null, false, true);
+            }
+            else
+            {
+                await command.RespondAsync($"You have no post to delete", null, false, true);
+            }
         }
 
         private async Task SlashCommandHandler(SocketSlashCommand command)
@@ -174,7 +193,7 @@ namespace Discord_Bot.StartUp
                   
                     }
                     else
-                        await command.RespondAsync($"You already have an active post");
+                        await command.RespondAsync($"You already have an active post", null, false, true);
                     break;
                 case "boss":
                     if (!dict.ContainsKey(posterId))
@@ -182,7 +201,7 @@ namespace Discord_Bot.StartUp
                         await HandleGameCommand(command, username, "Boss");
                     }
                     else
-                        await command.RespondAsync($"You already have an active post");
+                        await command.RespondAsync($"You already have an active post", null, false, true);
                     break;
                 case "mb":
                     if (!dict.ContainsKey(posterId))
@@ -190,7 +209,13 @@ namespace Discord_Bot.StartUp
                         await HandleGameCommand(command, username, "MB");
                     }
                     else
-                        await command.RespondAsync($"You already have an active post");
+                        await command.RespondAsync($"You already have an active post", null, false, true);
+                    break;
+                case "delete":
+                    // implemenet details for deleting post
+
+                    deletePost(command, posterId);
+                    
                     break;
                 case "status":
                     // Creator of the post can get the information
@@ -230,18 +255,22 @@ namespace Discord_Bot.StartUp
             
             
             string timeMsg = $"in {value} minutes.";
+           
             timeMsg = value.ToString() == "0" ? "now!" : timeMsg;
 
             Button button = new Button("Reminder");
-            string? customId = (value == null) ? "0" : value.ToString();
+            minutes = (value == null) ? Int32.Parse("0") : Int32.Parse(value.ToString());
+            
+            string customId = command.User.Id.ToString();
             var builder = button.Spawn(customId);
+            
 
 
             await command.RespondAsync($"{type} game has been issued by {username} {timeMsg} React to this to join!", components: builder.Build());
         }
 
 
-            private async void SendDM(IDMChannel channel, int time)
+        private async void SendDM(IDMChannel channel, int time)
         {
 
            await Task.Delay(time);
@@ -250,29 +279,70 @@ namespace Discord_Bot.StartUp
         }
         public async Task MyButtonHandler(SocketMessageComponent component)
         {
+            // Get the post's time and subtract it
             ulong id = component.User.Id;
             IUser user = client.GetUserAsync(id).Result;
             var channel = await user.CreateDMChannelAsync();
 
+            // I am a user and i should be involved in the post
+            ulong key = Convert.ToUInt64(component.Data.CustomId);
+            bool foundUser = false;
+            if (dict[key] != null)
+            {
+                foreach(User u in dict[key].GetUsers())
+                {
+                    if (id == u.getId())
+                    {
+                        foundUser = true;
+                    }
+                    break;
+                }
+            }
+            if (foundUser)
+            {
+                Post post = dict[key];
+                DateTime beforeTime = post.GetTime().AddMinutes((double)minutes);
+                DateTime currTime = DateTime.Now;
+                long difference = (beforeTime - currTime).Ticks;
+                if (difference >= 0)
+                {
+                    await component.RespondAsync($"You will be reminded 😀", null, false, true);
+                    SendDM(channel, (int)difference);
+                }
+                else
+                {
+                    await component.RespondAsync("Sorry, this game is no longer active :(");
+                }
+            }
+            else
+            {
+                await component.RespondAsync($"Please join first by reacting to the post 😀", null, false, true);
+            }
+
 
             //component.Data.CustomId
+            /*
+            int time = component.CreatedAt - DateTime.Now;
+            int mins = Int32.Parse(component.Data.CustomId) * 60000; // Says 5 minutes
+            if (component.CreatedAt + DateTimeOffset.Parse(mins.ToString()) >= DateTime.Now)
+            {
+                time = component.CreatedAt + mins - DateTime.Now;
+            }
+            */
 
-            int time = Int32.Parse(component.Data.CustomId) * 60000;
-            await component.RespondAsync($"You will be reminded 😀", null, false, true);
-            SendDM(channel, time); // In milliseconds
-            
-                    
-                   
+
+
         }
         private async Task MessageHandler(SocketMessage message)
         {
+
             if (message.Author.IsBot)
             {
                 if (message.Components.Count == 1)
                 {
                    
                         ActionRowComponent reminder = message.Components.SingleOrDefault();
-                        createPost(message, reminder);
+                        createPost(message, reminder,minutes);
                     
                     
                 }

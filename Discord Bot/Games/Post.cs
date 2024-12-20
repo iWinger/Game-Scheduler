@@ -26,22 +26,27 @@ namespace Discord_Bot.Games
         private DateTime Time { get; set; }
 
         private Repository Mode { get; set; }
+        
+        private int Minutes { get; set; }
 
 
 
-        public Post(User Creator, SocketMessage Message, ActionRowComponent Reminder)
+        public Post(User creator, SocketMessage message, ActionRowComponent reminder, DateTime time, int minutes)
         {
-            this.Creator = Creator;
-            this.Message = Message;
+            this.Creator = creator;
+            this.Message = message;
             this.Id = Message.Id;
-            this.Reminder = Reminder;
+            this.Reminder = reminder;
             this.Users = new List<User>();
+            this.Time = time;
+            this.Minutes = minutes;
         }
 
         public List<User> GetUsers() { return this.Users; }
 
         public ulong GetId() { return this.Id; }
-        
+
+        public DateTime GetTime() { return this.Time; }
         public void AddUser(User User)
         {
             Users.Add(User);
