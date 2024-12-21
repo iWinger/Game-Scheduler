@@ -143,6 +143,7 @@ namespace Discord_Bot.StartUp
         private void createPost(SocketMessage msg, ActionRowComponent reminder, int minutes)
         {
             Post post = new Post(poster,msg, reminder, DateTime.Now,minutes); // Save the socket message ID into the post 
+            poster.setId(posterId);
             post.AddUser(poster);
             var key = posterId; 
 
@@ -291,6 +292,7 @@ namespace Discord_Bot.StartUp
             {
                 foreach(User u in dict[key].GetUsers())
                 {
+                    
                     if (id == u.getId())
                     {
                         foundUser = true;
@@ -304,6 +306,7 @@ namespace Discord_Bot.StartUp
                 DateTime beforeTime = post.GetTime().AddMinutes((double)minutes);
                 DateTime currTime = DateTime.Now;
                 long difference = (beforeTime - currTime).Ticks;
+                difference = difference / 10000;
                 if (difference >= 0)
                 {
                     await component.RespondAsync($"You will be reminded 😀", null, false, true);
@@ -311,7 +314,7 @@ namespace Discord_Bot.StartUp
                 }
                 else
                 {
-                    await component.RespondAsync("Sorry, this game is no longer active :(");
+                    await component.RespondAsync("This game has already happened or is happening!", null , false, true);
                 }
             }
             else

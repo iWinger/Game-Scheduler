@@ -22,6 +22,11 @@ namespace Discord_Bot.Game
             this.Id = user.DiscriminatorValue;
         }
 
+        public void setName(string name)
+        {
+            this.Name = name;
+        }
+
         public void setPost(Post post)
         {
             Post = post;
@@ -30,11 +35,6 @@ namespace Discord_Bot.Game
         public void setId(ulong id)
         {
             this.Id = id;
-        }
-
-        public void setName(string name)
-        {
-            this.Name = name;
         }
 
         public Post getPost() { return this.Post; }
