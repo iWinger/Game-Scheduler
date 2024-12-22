@@ -71,9 +71,9 @@ namespace Discord_Bot.StartUp
 
             var deleteCommand = new SlashCommandBuilder().WithName("delete").WithDescription("Deleting your active post");
 
-            var statusCommand = new SlashCommandBuilder();
-            statusCommand.WithName("status");
-            statusCommand.WithDescription("Generates activate participants for most active post from creator");
+            var statusCommand = new SlashCommandBuilder().WithName("status").WithDescription("Generates activate participants for most active post from creator");
+
+            var rulesCommand = new SlashCommandBuilder().WithName("rules").WithDescription("How to use this bot");
 
            
 
@@ -91,6 +91,7 @@ namespace Discord_Bot.StartUp
                 await guild.CreateApplicationCommandAsync(mbCommand.Build());
                 await guild.CreateApplicationCommandAsync(deleteCommand.Build());
                 await guild.CreateApplicationCommandAsync(statusCommand.Build());
+                await guild.CreateApplicationCommandAsync(rulesCommand.Build());
 
                 //await client.CreateGlobalApplicationCommandAsync(globalCommand.Build());
 
@@ -237,6 +238,10 @@ namespace Discord_Bot.StartUp
                     break;
                 case "stats":
                     await command.RespondAsync($"{username} executed stats");
+                    break;
+
+                case "rules":
+                    await command.RespondAsync($"Hello fellow player 😀! These are the commands you can use for this bot: \n\n */tvt set (minutes)* \n Description: Sets a TVT game post in x amount of minutes. People who react to the post display interest in joining, and are also allowed to be notified by the bot through a DM. \n  */status* \n Description: Shows the users who reacted to the post and are interested in the game. \n */delete* \n Description: Deletes your current active post.");
                     break;
                 default:
                     await command.RespondAsync($"Not a valid command");
