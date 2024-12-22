@@ -71,7 +71,11 @@ namespace Discord_Bot.StartUp
 
             var deleteCommand = new SlashCommandBuilder().WithName("delete").WithDescription("Deleting your active post");
 
-            var statusCommand = new SlashCommandBuilder().WithName("status").WithDescription("Generates activate participants for most active post from creator");
+            var statusCommand = new SlashCommandBuilder().WithName("status").WithDescription("Shows list of participants for most active post from creator");
+
+            var repostCommand = new SlashCommandBuilder().WithName("repost").WithDescription("Allows you to repost your current post if needed");
+
+            //var generateCommand = new SlashCommandBuilder().WithName("generate").WithDescription("Generates a balanced team based on assigned player value ratings");
 
             var rulesCommand = new SlashCommandBuilder().WithName("rules").WithDescription("How to use this bot");
 
@@ -91,6 +95,7 @@ namespace Discord_Bot.StartUp
                 await guild.CreateApplicationCommandAsync(mbCommand.Build());
                 await guild.CreateApplicationCommandAsync(deleteCommand.Build());
                 await guild.CreateApplicationCommandAsync(statusCommand.Build());
+                await guild.CreateApplicationCommandAsync(repostCommand.Build());
                 await guild.CreateApplicationCommandAsync(rulesCommand.Build());
 
                 //await client.CreateGlobalApplicationCommandAsync(globalCommand.Build());
@@ -170,6 +175,19 @@ namespace Discord_Bot.StartUp
                 await command.RespondAsync($"You have no post to delete", null, false, true);
             }
         }
+        private async void repost(SocketSlashCommand command, ulong posterId)
+        {
+            var key = posterId;
+
+            if (dict.ContainsKey(posterId))
+            {
+                SocketMessage msg = dict[posterId].GetMessage();
+                Button button = new Button("Reminder");
+                string customId = command.User.Id.ToString();
+                var builder = button.Spawn(customId);
+                await command.RespondAsync(msg.Content, components: builder.Build());
+            }
+        }
 
         private async Task SlashCommandHandler(SocketSlashCommand command)
         {
@@ -236,6 +254,9 @@ namespace Discord_Bot.StartUp
                     else await command.RespondAsync($"You have no ongoing post");
 
                     break;
+                case "repost":
+                    repost(command, posterId);
+                    break;
                 case "stats":
                     await command.RespondAsync($"{username} executed stats");
                     break;
@@ -258,9 +279,10 @@ namespace Discord_Bot.StartUp
         {
             var fieldName = command.Data.Options.First().Name;
             var value = command.Data.Options.FirstOrDefault().Value;
-            
-            
-            string timeMsg = $"in {value} minutes.";
+
+            DateTime currTime = DateTime.Now;
+            DateTime beforeTime = currTime.AddMinutes((double)minutes);
+            string timeMsg = $"in {value} minutes. ({beforeTime})";
            
             timeMsg = value.ToString() == "0" ? "now!" : timeMsg;
 
@@ -348,31 +370,16 @@ namespace Discord_Bot.StartUp
             {
                 if (message.Components.Count == 1)
                 {
-                   
+                          
+                    if (!dict.ContainsKey(posterId))
+                    {
                         ActionRowComponent reminder = message.Components.SingleOrDefault();
-                        createPost(message, reminder,minutes);
+                        createPost(message, reminder, minutes);
+                    }
                     
                     
                 }
             }
-
-            /* Process commands */
-            /*
-
-            await ReplyAsync(message, "Hello! I am an expense tracker bot. Let's get you started. Would you like to make an account? ");
-
-            string answer = message.Content.ToLower();
-            if (answer.Equals("yes"))
-            {
-                // Create a detailed information account
-                string name = message.Author.GlobalName;
-                Account account = new Account(name);
-            }
-            else
-            {
-                await ReplyAsync(message, "It looks like you don't want to save money. ");
-            }
-            */
 
         }
 

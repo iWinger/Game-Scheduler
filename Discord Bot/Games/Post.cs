@@ -42,6 +42,7 @@ namespace Discord_Bot.Games
             this.Minutes = minutes;
         }
 
+        public SocketMessage GetMessage() { return this.Message; }
         public List<User> GetUsers() { return this.Users; }
 
         public ulong GetId() { return this.Id; }
