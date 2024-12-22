@@ -10,16 +10,28 @@ namespace Discord_Bot.Game
 {
     internal class User
     {
-        private string Name { get; set; }
-
         private ulong Id { get; set; }
 
+        private string Name { get; set; }
+
         private Post Post { get; set; }
+
+        private int Rating { get; set; }
 
         public User(SocketUser user)
         {
             this.Name = user.Username;
             this.Id = user.DiscriminatorValue;
+        }
+
+        public User(string name)
+        {
+            this.Name = name;
+        }
+
+        public void setId(ulong id)
+        {
+            this.Id = id;
         }
 
         public void setName(string name)
@@ -32,13 +44,17 @@ namespace Discord_Bot.Game
             Post = post;
         }
 
-        public void setId(ulong id)
+        public void setRating(int rating)
         {
-            this.Id = id;
+            this.Rating = rating;
         }
 
-        public Post getPost() { return this.Post; }
-        public string getName() { return this.Name; }
         public ulong getId() { return this.Id; }
+        
+        public string getName() { return this.Name; }
+
+        public Post getPost() { return this.Post; }
+
+        public int getRating() { return this.Rating; }
     }
 }

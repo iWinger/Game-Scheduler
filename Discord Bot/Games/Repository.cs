@@ -16,16 +16,12 @@ namespace Discord_Bot.Games
         private List<Post> Posts;
 
         private Dictionary<ulong, Post> Dict;
-        public Dictionary<ulong, User> Map;
-        
-       
+
         public Repository()
         {
             this.Users = new List<User>();
             this.Posts = new List<Post>();
             this.Dict = new Dictionary<ulong, Post>();
-            this.Map = new Dictionary<ulong, User>();
-            
         }
 
         public List<User> GetUsers() { return this.Users; }

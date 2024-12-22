@@ -42,18 +42,18 @@ namespace Discord_Bot.Games
             this.Minutes = minutes;
         }
 
-        public SocketMessage GetMessage() { return this.Message; }
-        public List<User> GetUsers() { return this.Users; }
+        public SocketMessage getMessage() { return this.Message; }
+        public List<User> getUsers() { return this.Users; }
 
-        public ulong GetId() { return this.Id; }
+        public ulong getId() { return this.Id; }
 
-        public DateTime GetTime() { return this.Time; }
-        public void AddUser(User User)
+        public DateTime getTime() { return this.Time; }
+        public void addUser(User User)
         {
             Users.Add(User);
         }
 
-        public void RemoveUsers(User User)
+        public void removeUsers(User User)
         {
             Users.Remove(User);
         }
