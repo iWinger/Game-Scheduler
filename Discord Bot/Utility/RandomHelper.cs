@@ -19,32 +19,65 @@ namespace Discord_Bot.Utility
             Random = new Random();
         }
 
+        private void combinations(int[] arr, int idx, int start, int[] result, List<List<int>> list)
+        {
+            if (idx == 0)
+            {
+                result.ToList().ForEach(i => Console.WriteLine(i.ToString()));
+                list.Add(new List<int>(result.ToList()));
+                return;
+            }
+            for(int i = start; i <= arr.Length-idx; i++)
+            {
+                result[result.Length - idx] = arr[i];
+                combinations(arr, idx - 1, i + 1, result,list);
+
+            }
+        }
+        
+
         public List<(List<User>, List<User>)> calculateTeams()
         {
             // Generate combinations of n/2 sets of people
-
-            List<(List<User>,List<User>)> teams = new List<(List<User>,List<User>)>();
-            for(int i = 0; i < Players.Length; i++)
+            List<(List<User>, List<User>)> teams = new List<(List<User>, List<User>)>();
+            List<List<int>> list = new List<List<int>>();
+            int[] arr = new int[Players.Length];
+            for(int i = 0; i < arr.Length; i++)
             {
-                for(int j = i+1; j < Players.Length; j++)
-                {
-                    for(int k = j+1; k < Players.Length; k++)
-                    {
-                        List<User> A_Team = new List<User>();
-                        A_Team.Add(Players[i]);
-                        A_Team.Add(Players[j]);
-                        A_Team.Add(Players[k]);
-                        List<User> B_Team = AddOtherTeam(i, j, k);
-                        teams.Add((A_Team, B_Team));
-
-                    }
-                    
-                }
+                arr[i] = i; // Represents the index of the player
+            }
+            int k = this.Players.Length / 2;
+            combinations(arr, k, 0, new int[k], list);
+            
+            for(int i = 0; i < list.Count; i++)
+            {
+                List<int> teamA = list[i].ToList();
+                List<int> teamB = AddOtherTeam(teamA,this.Players.Length);
+                AddBothTeams(teams,teamA, teamB);
+                
             }
 
             return teams;
+        }
+
+        private void AddBothTeams(List<(List<User>,List<User>)> teams, List<int> teamA, List<int> teamB)
+        {
             
-             
+                List<User> A_Team = new List<User>();
+                foreach(int m in teamA)
+                {
+                    A_Team.Add(this.Players[m]);
+                }
+                List<User> B_Team = new List<User>();
+                foreach (int n in teamB)
+                {
+                    B_Team.Add(this.Players[n]);
+                }
+
+                (List<User>, List<User>) pair = (A_Team, B_Team);
+                teams.Add(pair);
+
+            
         }
 
         public string PrintTeam(List<User> team)
@@ -63,23 +96,20 @@ namespace Discord_Bot.Utility
             return players;
         }
 
-        private List<User> AddOtherTeam(int i, int j, int k)
+        private List<int> AddOtherTeam(List<int> list,int max)
         {
+            var set = new HashSet<int>(list);
             // Calculate the other team
-
-            int idx = 0;
-            List<User> B_Team = new List<User>();
-            while(idx < Players.Length)
+            List<int> teamB = new List<int>();
+            for(int i = 0; i < max; i++)
             {
-                if (idx != i && idx != j && idx != k)
+                if (!set.Contains(i))
                 {
-                    B_Team.Add(Players[idx]);
-                    
+                    teamB.Add(i);
                 }
-                idx++;
             }
+            return teamB;
 
-            return B_Team;
         }
 
         public (List<User>, List<User>) GetRandomTeam(List<(List<User>, List<User>)> teams)

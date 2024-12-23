@@ -29,7 +29,7 @@ namespace Discord_Bot.StartUp
 
         public Program()
         {
-            var _config = new DiscordSocketConfig { MessageCacheSize = 100 };
+            var _config = new DiscordSocketConfig { MessageCacheSize = 150 };
             repository = new Repository();
             dict = repository.GetDict();
             configuration = new ConfigurationBuilder()
@@ -59,11 +59,12 @@ namespace Discord_Bot.StartUp
 
         public async Task Client_Ready()
         {
-            
-            foreach (var guild in client.Guilds) { 
-            
 
-                var tvtCommand = new SlashCommandBuilder().WithName("tvt").WithDescription("Starting a Team Vs Team").AddOption("minutes", ApplicationCommandOptionType.String, "the value to set the field", isRequired: true);
+            foreach (var guild in client.Guilds) {
+
+                
+                //var guild = client.GetGuild(testGuild);
+                var tvtCommand = new SlashCommandBuilder().WithName("tvt").WithDescription("Starting a Team Vs Team game").AddOption("minutes", ApplicationCommandOptionType.String, "the value to set the field", isRequired: true);
 
                 var deleteCommand = new SlashCommandBuilder().WithName("delete").WithDescription("Deleting your active post");
 
@@ -71,11 +72,11 @@ namespace Discord_Bot.StartUp
 
                 var repostCommand = new SlashCommandBuilder().WithName("repost").WithDescription("Allows you to repost your current post if needed");
 
-                var balancedCommand = new SlashCommandBuilder().WithName("balance").WithDescription("Generates a balanced team based on assigned player value ratings");
+                var balancedCommand = new SlashCommandBuilder().WithName("balance").WithDescription("Generates a set of balanced teams based on assigned player value ratings").AddOption("playersratings", ApplicationCommandOptionType.String, "put in player and then number separated by space", isRequired: true);
 
                 var randomCommand = new SlashCommandBuilder().WithName("random").WithDescription("Creates a random set of teams based on players").AddOption("players", ApplicationCommandOptionType.String, "put in list of players separated by space", isRequired: true);
 
-                var rulesCommand = new SlashCommandBuilder().WithName("rules").WithDescription("How to use this bot");
+                var rulesCommand = new SlashCommandBuilder().WithName("rules").WithDescription("How to use this bots and the commands");
 
 
                 try
@@ -97,7 +98,7 @@ namespace Discord_Bot.StartUp
 
                     Console.WriteLine(json);
                 }
-            }
+           }
         }
 
         private async Task OnReactionAddedEvent(Cacheable<IUserMessage, ulong> cachedMessage, Cacheable<IMessageChannel,ulong> originChannel, SocketReaction reaction)
@@ -159,7 +160,7 @@ namespace Discord_Bot.StartUp
             
             if (dict.ContainsKey(posterId)){
                 dict.Remove(posterId);
-                await command.RespondAsync($"You have successfully deleted your post 😀", null, false, true);
+                await command.RespondAsync($"You have successfully deleted your post 😀");
             }
             else
             {
@@ -217,7 +218,8 @@ namespace Discord_Bot.StartUp
                     // Reposts active post
                     repost(command, posterId);
                     break;
-                case "balanced":
+                case "balance":
+                    await HandleBalancedCommand(command);
                     break;
                 case "random":
                     //Creates 2 random sets of teams
@@ -225,10 +227,10 @@ namespace Discord_Bot.StartUp
                     break;
                 case "rules":
                     //Rules on the bot
-                    await command.RespondAsync($"Hello fellow player 😀! These are the commands you can use for this bot: \n\n */tvt set [minutes]* \n Description: Sets a TVT game post in x amount of minutes. People who react to the post display interest in joining, and are also allowed to be notified by the bot through a DM. \n  */status* \n Description: Shows the users who reacted to the post and are interested in the game. \n */delete* \n Description: Deletes your current active post. \n */repost* \n Description: Reposts your current active post \n */random [player_1 ... player_n] * \n Description: Creates two sets of random teams. The number of players must be even. ");
+                    await command.RespondAsync($"Hello fellow player 😀! These are the commands you can use for this bot: \n\n **/tvt set [minutes]** \n Description: Sets a Team Vs Team game post in x amount of minutes. People who react to the post display interest in joining, and are also allowed to be notified by the bot through a DM. \n  **/status** \n Description: Shows the users who reacted to the post and are interested in the game. \n **/delete** \n Description: Deletes your current active post. \n **/repost** \n Description: Reposts your current active post. \n **/balanced [player_1 rating_1 ... player_n rating_n]** \n Description: Creates a list of balanced teams sorted by ascending values in difference between the two teams. Best rating values would range from [0,100]. \n **/random [player_1 ... player_n]** \n Description: Creates two sets of random teams. The number of players must be even. ");
                     break;
                 default:
-                    await command.RespondAsync($"Not a valid command");
+                    await command.RespondAsync($"Not a valid command", null, false, true);
                     break;
 
 
@@ -251,8 +253,82 @@ namespace Discord_Bot.StartUp
                 }
                 await command.RespondAsync($"Active participants in this TVT: \n\n {res} \n Current number of players interested: {users.Count}");
             }
-            else await command.RespondAsync($"You have no ongoing post");
+            else await command.RespondAsync($"You have no ongoing post", null, false, true);
 
+        }
+
+        private async Task HandleBalancedCommand(SocketSlashCommand command)
+        {
+            var value = command.Data.Options.FirstOrDefault().Value;
+            string str = value.ToString().Trim();
+            string[] arr = str.Split(' ', 40); // 20 is the Predetermined max size
+            int rating = 0;
+            int[] ratings = new int[arr.Length / 2];
+            User[] players = new User[arr.Length / 2];
+            int idx = 0;
+            int count = 0;
+
+            //if (arr.Length % 2 != 0) await command.RespondAsync($"Please put in an even number of players and ratings. ", null, false, true);
+            for(int i = 0; i < arr.Length; i++)
+            {
+                bool isNumber = Int32.TryParse(arr[i], out rating);
+           
+                if(i % 2 == 0)
+                {
+                    User user = new User(arr[i]);
+                    players[count++] = user;
+                }
+
+                if(i % 2 == 1 && !isNumber)
+                {
+                    await command.RespondAsync($"Please put a rating after each player's name.", null, false, true);
+                    break;
+                }
+
+                else if(i % 2 == 1 && isNumber)
+                {
+                    ratings[idx++] = rating;
+                }
+            }
+            int j = 0;
+            foreach(User user in players)
+            {
+                user.setRating(ratings[j++]);
+            }
+
+            RandomHelper helper = new RandomHelper(players);
+            List<(List<User>, List<User>)> teams = helper.calculateTeams();
+            Dictionary<int, int> dict = new Dictionary<int, int>(); // Maps each unique index to each sum difference
+            for(int i = 0; i < teams.Count; i++)
+            {
+                int sumA = 0;
+                int sumB = 0;
+                foreach(User user in teams[i].Item1)
+                {
+                    sumA += user.getRating();
+                }
+                foreach(User user in teams[i].Item2)
+                {
+                    sumB += user.getRating();
+                }
+                int sumDiff = (sumA - sumB) >= 0 ? sumA - sumB : sumB - sumA;
+                dict.Add(i, sumDiff);
+            }
+            // Now we have each set of team assigned a difference in sums
+            string msg = "The ideal balance number is 0. The closer to 0, the more balanced the teams are 😀\n\n";
+            var sortedDict = dict.OrderBy(i => i.Value);
+            int limit = 10; // Instead of number of entries, why not values < 10? 
+            int x = 0;
+            HashSet<int> dups = new HashSet<int>();
+            foreach(KeyValuePair<int,int> pair in sortedDict)
+            {   if (dups.Contains(pair.Value)) continue;
+                dups.Add(pair.Value);
+                if (x > limit) break;
+                (List<User>, List<User>) set = teams[pair.Key];
+                msg += $"Random Team A: {helper.PrintTeam(set.Item1)} \nRandom Team B: {helper.PrintTeam(set.Item2)} \n **The difference between the two teams in ratings is: {pair.Value}** \n\n";
+                x++;
+            }
+            await command.RespondAsync(msg);
         }
 
         private async Task HandleRandomCommand(SocketSlashCommand command)
@@ -287,10 +363,11 @@ namespace Discord_Bot.StartUp
         {
             var fieldName = command.Data.Options.First().Name;
             var value = command.Data.Options.FirstOrDefault().Value;
-
+            string val = value.ToString();
+            double v = Convert.ToDouble(val);
             DateTime currTime = DateTime.Now;
-            DateTime beforeTime = currTime.AddMinutes((double)minutes);
-            string timeMsg = $"in {value} minutes. ({beforeTime})";
+            DateTime beforeTime = currTime.AddMinutes(v);
+            string timeMsg = $"in {value} minutes. ({beforeTime} EST)"; // Timezone is wherever this program is hosted in
            
             timeMsg = value.ToString() == "0" ? "now!" : timeMsg;
 
