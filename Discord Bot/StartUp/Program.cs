@@ -5,10 +5,9 @@ using Discord_Bot.Game;
 using Discord_Bot.Games;
 using Discord_Bot.Utility;
 using Discord.Commands;
-
 using Newtonsoft.Json;
 using Microsoft.Extensions.Configuration;
-using Discord.Rest;
+
 
 
 namespace Discord_Bot.StartUp
@@ -29,18 +28,16 @@ namespace Discord_Bot.StartUp
 
         public Program()
         {
-            var _config = new DiscordSocketConfig { MessageCacheSize = 150 };
+            var _config = new DiscordSocketConfig { GatewayIntents = GatewayIntents.All,MessageCacheSize = 200 };
             repository = new Repository();
             dict = repository.GetDict();
-            configuration = new ConfigurationBuilder()
-            .AddUserSecrets<Program>()
-            .Build();
             client = new DiscordSocketClient(_config);
             client.MessageReceived += MessageHandler;
             client.Ready += Client_Ready;
             client.SlashCommandExecuted += SlashCommandHandler;
             client.ButtonExecuted += MyButtonHandler; // Subscribes to events
             client.ReactionAdded += OnReactionAddedEvent;
+            client.Log += LogAsync;
             //client.UserIsTyping += UserIsTyping;
         }
 
@@ -48,7 +45,9 @@ namespace Discord_Bot.StartUp
         public async Task StartBotAsync()
         {
             //Secret value
-
+            configuration = new ConfigurationBuilder()
+            .AddUserSecrets<Program>()
+            .Build();
             var token = configuration["token"];
             await client.LoginAsync(TokenType.Bot, token);
             await client.StartAsync();
@@ -92,7 +91,7 @@ namespace Discord_Bot.StartUp
                     //await client.CreateGlobalApplicationCommandAsync(globalCommand.Build());
 
                 }
-                catch (ApplicationCommandException exception)
+                catch (HttpException exception)
                 {
                     var json = JsonConvert.SerializeObject(exception.Errors, Formatting.Indented);
 
@@ -103,19 +102,22 @@ namespace Discord_Bot.StartUp
 
         private async Task OnReactionAddedEvent(Cacheable<IUserMessage, ulong> cachedMessage, Cacheable<IMessageChannel,ulong> originChannel, SocketReaction reaction)
         {
+            
             SocketMessage msg = (SocketMessage)reaction.Message;
             SocketGuildUser displayName = (SocketGuildUser)reaction.User;
+            ulong id = msg.Interaction.User.Id;
             User user = new User(displayName);
             user.setId(displayName.Id);
             user.setName(displayName.GlobalName);
             //string username = user.GetName();
             ulong userId = user.getId();
             ulong key = 0;
-            // We want to compare socket message IDs and find the right one
+
+            // We want to compare author of post Id and find the right one
             foreach(KeyValuePair<ulong,Post> item in dict)
             {
-                Post post = item.Value;
-                if(post.getId() == msg.Id)
+               
+                if(id == item.Key)
                 {
                     // Found the right one
                     key = item.Key;
@@ -128,7 +130,15 @@ namespace Discord_Bot.StartUp
             {
                 // If the dictionary contains a valid post
                 Post post = dict[key];
-                if (!post.getUsers().Contains(user) && key != userId) // If it's not the owner
+                bool canAdd = true;
+                foreach(User u in post.getUsers())
+                {
+                    if(u.getId() == userId)
+                    {
+                        canAdd = false;
+                    }
+                }
+                if (canAdd && key != userId) // If it's not the owner
                 {
                     dict[key].addUser(user); // Add to dictionary
                 }
@@ -173,11 +183,26 @@ namespace Discord_Bot.StartUp
 
             if (dict.ContainsKey(posterId))
             {
+                Post post = dict[posterId];
+                int max = post.getMinutes();
+                DateTime time = post.getTime();
+                DateTime finishTime = time.AddMinutes((double)max);
+                DateTime currTime = DateTime.Now;
+                long difference = (currTime - time).Ticks;
+                difference = (int)(difference / 10000);
+                int mins = (int)(difference / 60000);
+                mins = max - mins;
                 SocketMessage msg = dict[posterId].getMessage();
                 Button button = new Button("Reminder");
                 string customId = command.User.Id.ToString();
                 var builder = button.Spawn(customId);
-                await command.RespondAsync(msg.Content, components: builder.Build());
+                var timeMsg = $". Game starts in {mins.ToString()} minutes. ({finishTime} EST).";
+                if(mins <= 0)
+                {
+                    timeMsg = "Game starts in 0 minutes. Game is already happening! ";
+                }
+                //await command.RespondAsync(msg.Content, components: builder.Build());
+                await command.RespondAsync($"TVT game has been issued by {command.User.GlobalName} {timeMsg} React to this to join!", components: builder.Build());
             }
         }
 
@@ -206,8 +231,10 @@ namespace Discord_Bot.StartUp
                     break;     
                 case "delete":
                     // Deletes the post
-                    deletePost(command, posterId);
-                    
+                    string msg = "“No ruler should put troops into the field merely to gratify his\r\nown spleen; no general should fight a battle simply out of pique.\r\nIf it is to your advantage, make a forward move; if not, stay\r\nwhere you are.\r\nAnger may in time change to gladness; vexation may be succeeded\r\nby content.\r\nBut a kingdom that has once been destroyed can never come again\r\ninto being; nor can the dead ever be brought back to life.”";
+                    //await command.RespondAsync($"```bash\n\"hi\"```");
+                    await command.RespondAsync($"```bash\n\"{msg}\"```");
+                    //deletePost(command, posterId);
                     break;
                 case "status":
                     // Gets how many active users are in the post
@@ -227,7 +254,7 @@ namespace Discord_Bot.StartUp
                     break;
                 case "rules":
                     //Rules on the bot
-                    await command.RespondAsync($"Hello fellow player 😀! These are the commands you can use for this bot: \n\n **/tvt set [minutes]** \n Description: Sets a Team Vs Team game post in x amount of minutes. People who react to the post display interest in joining, and are also allowed to be notified by the bot through a DM. \n  **/status** \n Description: Shows the users who reacted to the post and are interested in the game. \n **/delete** \n Description: Deletes your current active post. \n **/repost** \n Description: Reposts your current active post. \n **/balanced [player_1 rating_1 ... player_n rating_n]** \n Description: Creates a list of balanced teams sorted by ascending values in difference between the two teams. Best rating values would range from [0,100]. \n **/random [player_1 ... player_n]** \n Description: Creates two sets of random teams. The number of players must be even. ");
+                    await command.RespondAsync($"Hello fellow player 😀! These are the commands you can use for this bot: \n\n ***/tvt [minutes]*** \n Sets a Team Vs Team game post in x amount of minutes. People who react to the post display interest in joining, and are also allowed to be notified by the bot through a DM. \n ***/status*** \n Shows the users who reacted to the post and are interested in the game. \n ***/delete*** \n Deletes your current active post. \n ***/repost*** \n Reposts your current active post with the time left to projected game time. \n ***/balanced [player_1 rating_1 ... player_n rating_n]*** \n Creates a list of balanced teams sorted by ascending values in difference between the two teams. Best rating values would range from [0,100]. \n ***/random [player_1 ... player_n]*** \n Creates two sets of random teams. The number of players must be even.");
                     break;
                 default:
                     await command.RespondAsync($"Not a valid command", null, false, true);
@@ -251,7 +278,7 @@ namespace Discord_Bot.StartUp
                 {
                     res += $"{user.getName()}\n";
                 }
-                await command.RespondAsync($"Active participants in this TVT: \n\n {res} \n Current number of players interested: {users.Count}");
+                await command.RespondAsync($"Active participants in this TVT game: \n\n{res} \n Current number of players interested: {users.Count}");
             }
             else await command.RespondAsync($"You have no ongoing post", null, false, true);
 
@@ -367,7 +394,7 @@ namespace Discord_Bot.StartUp
             double v = Convert.ToDouble(val);
             DateTime currTime = DateTime.Now;
             DateTime beforeTime = currTime.AddMinutes(v);
-            string timeMsg = $"in {value} minutes. ({beforeTime} EST)"; // Timezone is wherever this program is hosted in
+            string timeMsg = $"Game starts in {value} minutes. ({beforeTime} EST)."; // Timezone is wherever this program is hosted in
            
             timeMsg = value.ToString() == "0" ? "now!" : timeMsg;
 
@@ -456,14 +483,29 @@ namespace Discord_Bot.StartUp
 
         }
 
-        
+        private Task LogAsync(LogMessage message)
+        {
+            if (message.Exception is CommandException cmdException)
+            {
+                Console.WriteLine($"[Command/{message.Severity}] {cmdException.Command.Aliases.First()}"
+                    + $" failed to execute in {cmdException.Context.Channel}.");
+                Console.WriteLine(cmdException);
+            }
+            else
+                Console.WriteLine($"[General/{message.Severity}] {message}");
+
+            return Task.CompletedTask;
+        }
+
+
         /*
         private async Task UserIsTyping(Cacheable<IUser, ulong> user, Cacheable<IMessageChannel, ulong> channel)
         {
-            this.channel = await channel.GetOrDownloadAsync();
-            //this.channel.SendMessageAsync("I know you are typing...");
+            IMessageChannel chan = await channel.GetOrDownloadAsync();
+            chan.SendMessageAsync("AGG");
         }
         */
+
 
         static void Main(string[] args) => new Program().StartBotAsync().GetAwaiter().GetResult();
     }

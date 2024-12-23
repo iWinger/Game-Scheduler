@@ -48,6 +48,8 @@ namespace Discord_Bot.Games
         public ulong getId() { return this.Id; }
 
         public DateTime getTime() { return this.Time; }
+
+        public int getMinutes() { return this.Minutes; }
         public void addUser(User User)
         {
             Users.Add(User);
