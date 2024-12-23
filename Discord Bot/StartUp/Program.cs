@@ -28,7 +28,7 @@ namespace Discord_Bot.StartUp
 
         public Program()
         {
-            var _config = new DiscordSocketConfig { GatewayIntents = GatewayIntents.All,MessageCacheSize = 200 };
+            var _config = new DiscordSocketConfig { MessageCacheSize = 200 };
             repository = new Repository();
             dict = repository.GetDict();
             client = new DiscordSocketClient(_config);
@@ -75,6 +75,8 @@ namespace Discord_Bot.StartUp
 
                 var randomCommand = new SlashCommandBuilder().WithName("random").WithDescription("Creates a random set of teams based on players").AddOption("players", ApplicationCommandOptionType.String, "put in list of players separated by space", isRequired: true);
 
+                var quoteCommand = new SlashCommandBuilder().WithName("quote").WithDescription("Gets a random quote from legendary figure Sun Tzu on warfare");
+
                 var rulesCommand = new SlashCommandBuilder().WithName("rules").WithDescription("How to use this bots and the commands");
 
 
@@ -87,6 +89,7 @@ namespace Discord_Bot.StartUp
                     await guild.CreateApplicationCommandAsync(repostCommand.Build());
                     await guild.CreateApplicationCommandAsync(balancedCommand.Build());
                     await guild.CreateApplicationCommandAsync(randomCommand.Build());
+                    await guild.CreateApplicationCommandAsync(quoteCommand.Build());
                     await guild.CreateApplicationCommandAsync(rulesCommand.Build());
                     //await client.CreateGlobalApplicationCommandAsync(globalCommand.Build());
 
@@ -196,13 +199,13 @@ namespace Discord_Bot.StartUp
                 Button button = new Button("Reminder");
                 string customId = command.User.Id.ToString();
                 var builder = button.Spawn(customId);
-                var timeMsg = $". Game starts in {mins.ToString()} minutes. ({finishTime} EST).";
+                var timeMsg = $" Game starts in {mins.ToString()} minutes. (__{finishTime} EST__).";
                 if(mins <= 0)
                 {
                     timeMsg = "Game starts in 0 minutes. Game is already happening! ";
                 }
                 //await command.RespondAsync(msg.Content, components: builder.Build());
-                await command.RespondAsync($"TVT game has been issued by {command.User.GlobalName} {timeMsg} React to this to join!", components: builder.Build());
+                await command.RespondAsync($"TVT game has been issued by {command.User.GlobalName}. {timeMsg} React to this to join!", components: builder.Build());
             }
         }
 
@@ -231,15 +234,11 @@ namespace Discord_Bot.StartUp
                     break;     
                 case "delete":
                     // Deletes the post
-                    string msg = "“No ruler should put troops into the field merely to gratify his\r\nown spleen; no general should fight a battle simply out of pique.\r\nIf it is to your advantage, make a forward move; if not, stay\r\nwhere you are.\r\nAnger may in time change to gladness; vexation may be succeeded\r\nby content.\r\nBut a kingdom that has once been destroyed can never come again\r\ninto being; nor can the dead ever be brought back to life.”";
-                    //await command.RespondAsync($"```bash\n\"hi\"```");
-                    await command.RespondAsync($"```bash\n\"{msg}\"```");
-                    //deletePost(command, posterId);
+                    deletePost(command, posterId);
                     break;
                 case "status":
                     // Gets how many active users are in the post
                     await HandleStatusCommand(command, posterId);
-
                     break;
                 case "repost":
                     // Reposts active post
@@ -252,18 +251,43 @@ namespace Discord_Bot.StartUp
                     //Creates 2 random sets of teams
                     await HandleRandomCommand(command);
                     break;
+                case "quote":
+                    await HandleQuoteCommand(command);
+                    break;
                 case "rules":
                     //Rules on the bot
-                    await command.RespondAsync($"Hello fellow player 😀! These are the commands you can use for this bot: \n\n ***/tvt [minutes]*** \n Sets a Team Vs Team game post in x amount of minutes. People who react to the post display interest in joining, and are also allowed to be notified by the bot through a DM. \n ***/status*** \n Shows the users who reacted to the post and are interested in the game. \n ***/delete*** \n Deletes your current active post. \n ***/repost*** \n Reposts your current active post with the time left to projected game time. \n ***/balanced [player_1 rating_1 ... player_n rating_n]*** \n Creates a list of balanced teams sorted by ascending values in difference between the two teams. Best rating values would range from [0,100]. \n ***/random [player_1 ... player_n]*** \n Creates two sets of random teams. The number of players must be even.");
+                    await command.RespondAsync($"Hello fellow player 😀! These are the commands you can use for this bot: \n\n ***/tvt [minutes]*** \n Sets a Team Vs Team game post in x amount of minutes. People who react to the post display interest in joining, and are also allowed to be notified by the bot through a DM. \n ***/status*** \n Shows the users who reacted to the post and are interested in the game. \n ***/delete*** \n Deletes your current active post. \n ***/repost*** \n Reposts your current active post with the time left to projected game time. \n ***/balanced [player_1 rating_1 ... player_n rating_n]*** \n Creates a list of balanced teams sorted by ascending values in difference between the two teams. Best rating values would range from [0,100]. \n ***/random [player_1 ... player_n]*** \n Creates two sets of random teams. The number of players must be even. \n ***/quote*** \n Gets a random quote from the legendary figure Sun Tzu on the art of warfare.");
                     break;
                 default:
                     await command.RespondAsync($"Not a valid command", null, false, true);
                     break;
 
+            }
+ 
+        }
+
+        private async Task HandleQuoteCommand(SocketSlashCommand command)
+        {
+            //string msg = "“No ruler should put troops into the field merely to gratify his\r\nown spleen; no general should fight a battle simply out of pique.\r\nIf it is to your advantage, make a forward move; if not, stay\r\nwhere you are.\r\nAnger may in time change to gladness; vexation may be succeeded\r\nby content.\r\nBut a kingdom that has once been destroyed can never come again\r\ninto being; nor can the dead ever be brought back to life.”";
+            //string msg2 = "When the general is weak and without authority; when his orders are not clear and distinct; when there are no fixed duties assigned to officers and men, and the ranks are formed in a slovenly haphazard manner, the result is utter disorganization.”";
+
+
+            int maxLimit = 50;
+            List<string> quotes = new List<string>();
+            for(int i = 0; i <= maxLimit; i++)
+            {
+                string num = i.ToString();
+                var quote = configuration["quote" + num];
+                if (quote != null)
+                    quotes.Add(configuration["quote" + num]);
 
             }
             
-            
+            Random random = new Random();
+            int idx = random.Next(quotes.Count+1);
+            string chosenQuote = quotes[idx];
+
+            await command.RespondAsync($"```bash\n\"{chosenQuote}\"```");
         }
 
         private async Task HandleStatusCommand(SocketSlashCommand command, ulong posterId)
@@ -276,9 +300,9 @@ namespace Discord_Bot.StartUp
 
                 foreach (User user in users)
                 {
-                    res += $"{user.getName()}\n";
+                    res += $"{user.getName()} ✅\n";
                 }
-                await command.RespondAsync($"Active participants in this TVT game: \n\n{res} \n Current number of players interested: {users.Count}");
+                await command.RespondAsync($"Active participants in this TVT game: \n\n{res} \n Current number of players interested: **{users.Count}**");
             }
             else await command.RespondAsync($"You have no ongoing post", null, false, true);
 
@@ -394,7 +418,7 @@ namespace Discord_Bot.StartUp
             double v = Convert.ToDouble(val);
             DateTime currTime = DateTime.Now;
             DateTime beforeTime = currTime.AddMinutes(v);
-            string timeMsg = $"Game starts in {value} minutes. ({beforeTime} EST)."; // Timezone is wherever this program is hosted in
+            string timeMsg = $"Game starts in {value} minutes. (__{beforeTime} EST__)."; // Timezone is wherever this program is hosted in
            
             timeMsg = value.ToString() == "0" ? "now!" : timeMsg;
 
@@ -406,7 +430,7 @@ namespace Discord_Bot.StartUp
             
 
 
-            await command.RespondAsync($"{type} game has been issued by {username} {timeMsg} React to this to join!", components: builder.Build());
+            await command.RespondAsync($"{type} game has been issued by {username}. {timeMsg} React to this to join!", components: builder.Build());
         }
 
 
