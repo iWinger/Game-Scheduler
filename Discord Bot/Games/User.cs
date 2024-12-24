@@ -29,6 +29,13 @@ namespace Discord_Bot.Game
             this.Name = name;
         }
 
+        public User(string name, ulong id)
+        {
+            this.Name = name;
+            this.Id = id;
+        }
+
+
         public void setId(ulong id)
         {
             this.Id = id;

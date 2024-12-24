@@ -85,6 +85,7 @@ namespace Discord_Bot.Utility
             string players = "";
             for(int i = 0; i < team.Count; i++)
             {
+                if (team[i] == null) continue;
                 if (i != team.Count - 1)
                     players += $"{team[i].getName()}, ";
                 else

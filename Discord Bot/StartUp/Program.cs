@@ -79,6 +79,8 @@ namespace Discord_Bot.StartUp
 
                 var rulesCommand = new SlashCommandBuilder().WithName("rules").WithDescription("How to use this bots and the commands");
 
+                var helpCommand = new SlashCommandBuilder().WithName("help").WithDescription("How to use this bots and the commands");
+
 
                 try
                 {
@@ -91,6 +93,7 @@ namespace Discord_Bot.StartUp
                     await guild.CreateApplicationCommandAsync(randomCommand.Build());
                     await guild.CreateApplicationCommandAsync(quoteCommand.Build());
                     await guild.CreateApplicationCommandAsync(rulesCommand.Build());
+                    await guild.CreateApplicationCommandAsync(helpCommand.Build());
                     //await client.CreateGlobalApplicationCommandAsync(globalCommand.Build());
 
                 }
@@ -108,15 +111,15 @@ namespace Discord_Bot.StartUp
             
             SocketMessage msg = (SocketMessage)reaction.Message;
             SocketGuildUser displayName = (SocketGuildUser)reaction.User;
-            ulong id = msg.Interaction.User.Id;
-            User user = new User(displayName);
-            user.setId(displayName.Id);
-            user.setName(displayName.GlobalName);
+
+            ulong key = (msg.Interaction != null) ? msg.Interaction.User.Id : 0;
+            User user = new User(displayName.GlobalName, displayName.Id);
+           
             //string username = user.GetName();
-            ulong userId = user.getId();
-            ulong key = 0;
+
 
             // We want to compare author of post Id and find the right one
+            /*
             foreach(KeyValuePair<ulong,Post> item in dict)
             {
                
@@ -127,21 +130,23 @@ namespace Discord_Bot.StartUp
                     break;
                 }
             }
-            
+            */            
      
             if (dict.ContainsKey(key))
             {
                 // If the dictionary contains a valid post
                 Post post = dict[key];
+                
                 bool canAdd = true;
                 foreach(User u in post.getUsers())
                 {
-                    if(u.getId() == userId)
+                    if(u.getId() == user.getId())
                     {
                         canAdd = false;
                     }
                 }
-                if (canAdd && key != userId) // If it's not the owner
+                
+                if (canAdd && key != user.getId()) // If it's not the owner
                 {
                     dict[key].addUser(user); // Add to dictionary
                 }
@@ -186,27 +191,45 @@ namespace Discord_Bot.StartUp
 
             if (dict.ContainsKey(posterId))
             {
-                Post post = dict[posterId];
-                int max = post.getMinutes();
-                DateTime time = post.getTime();
-                DateTime finishTime = time.AddMinutes((double)max);
-                DateTime currTime = DateTime.Now;
-                long difference = (currTime - time).Ticks;
-                difference = (int)(difference / 10000);
-                int mins = (int)(difference / 60000);
-                mins = max - mins;
+                (int x,DateTime y) item = calculateTime(posterId);
+                int mins = item.Item1;
+                DateTime finishTime = item.Item2;
                 SocketMessage msg = dict[posterId].getMessage();
                 Button button = new Button("Reminder");
-                string customId = command.User.Id.ToString();
-                var builder = button.Spawn(customId);
+                //string customId = command.User.Id.ToString();
+                var builder = button.Spawn("custom-id");
                 var timeMsg = $" Game starts in {mins.ToString()} minutes. (__{finishTime} EST__).";
                 if(mins <= 0)
                 {
                     timeMsg = "Game starts in 0 minutes. Game is already happening! ";
                 }
+
+                var embed = new EmbedBuilder()
+               .WithFooter(footer => footer.Text = "React to this post to join!")
+               .WithColor(Color.Blue)
+               .WithTitle($"TVT game has been issued by {command.User.GlobalName}.")
+               .WithDescription($"{timeMsg}");
                 //await command.RespondAsync(msg.Content, components: builder.Build());
-                await command.RespondAsync($"TVT game has been issued by {command.User.GlobalName}. {timeMsg} React to this to join!", components: builder.Build());
+                await command.RespondAsync(embed: embed.Build(), components: builder.Build());
             }
+            else
+            {
+                await command.RespondAsync($"There is no active post");
+            }
+        }
+
+        private (int,DateTime) calculateTime(ulong posterId)
+        {
+            Post post = dict[posterId];
+            int max = post.getMinutes();
+            DateTime time = post.getTime();
+            DateTime finishTime = time.AddMinutes((double)max);
+            DateTime currTime = DateTime.Now;
+            long difference = (currTime - time).Ticks;
+            difference = (int)(difference / 10000);
+            int mins = (int)(difference / 60000);
+            mins = max - mins;
+            return (mins, finishTime);
         }
 
        
@@ -258,6 +281,9 @@ namespace Discord_Bot.StartUp
                     //Rules on the bot
                     await command.RespondAsync($"Hello fellow player 😀! These are the commands you can use for this bot: \n\n ***/tvt [minutes]*** \n Sets a Team Vs Team game post in x amount of minutes. People who react to the post display interest in joining, and are also allowed to be notified by the bot through a DM. \n ***/status*** \n Shows the users who reacted to the post and are interested in the game. \n ***/delete*** \n Deletes your current active post. \n ***/repost*** \n Reposts your current active post with the time left to projected game time. \n ***/balanced [player_1 rating_1 ... player_n rating_n]*** \n Creates a list of balanced teams sorted by ascending values in difference between the two teams. Best rating values would range from [0,100]. \n ***/random [player_1 ... player_n]*** \n Creates two sets of random teams. The number of players must be even. \n ***/quote*** \n Gets a random quote from the legendary figure Sun Tzu on the art of warfare.");
                     break;
+                case "help":
+                    await command.RespondAsync($"Hello fellow player 😀! These are the commands you can use for this bot: \n\n ***/tvt [minutes]*** \n Sets a Team Vs Team game post in x amount of minutes. People who react to the post display interest in joining, and are also allowed to be notified by the bot through a DM. \n ***/status*** \n Shows the users who reacted to the post and are interested in the game. \n ***/delete*** \n Deletes your current active post. \n ***/repost*** \n Reposts your current active post with the time left to projected game time. \n ***/balanced [player_1 rating_1 ... player_n rating_n]*** \n Creates a list of balanced teams sorted by ascending values in difference between the two teams. Best rating values would range from [0,100]. \n ***/random [player_1 ... player_n]*** \n Creates two sets of random teams. The number of players must be even. \n ***/quote*** \n Gets a random quote from the legendary figure Sun Tzu on the art of warfare. \n ***/rules*** \n All the commands you need to know for this bot.");
+                    break;
                 default:
                     await command.RespondAsync($"Not a valid command", null, false, true);
                     break;
@@ -268,10 +294,7 @@ namespace Discord_Bot.StartUp
 
         private async Task HandleQuoteCommand(SocketSlashCommand command)
         {
-            //string msg = "“No ruler should put troops into the field merely to gratify his\r\nown spleen; no general should fight a battle simply out of pique.\r\nIf it is to your advantage, make a forward move; if not, stay\r\nwhere you are.\r\nAnger may in time change to gladness; vexation may be succeeded\r\nby content.\r\nBut a kingdom that has once been destroyed can never come again\r\ninto being; nor can the dead ever be brought back to life.”";
-            //string msg2 = "When the general is weak and without authority; when his orders are not clear and distinct; when there are no fixed duties assigned to officers and men, and the ranks are formed in a slovenly haphazard manner, the result is utter disorganization.”";
-
-
+            
             int maxLimit = 50;
             List<string> quotes = new List<string>();
             for(int i = 0; i <= maxLimit; i++)
@@ -292,17 +315,23 @@ namespace Discord_Bot.StartUp
 
         private async Task HandleStatusCommand(SocketSlashCommand command, ulong posterId)
         {
-            string res = "";
+ 
             var key = posterId;
+            
             if (dict.ContainsKey(key) && dict[key] != null)
             {
+                string res = "";
+                (int x, DateTime y) item = calculateTime(posterId);
+                int mins = item.Item1;
+                DateTime finishTime = item.Item2;
+                mins = (mins < 0) ? 0 : mins;
                 List<User> users = dict[key].getUsers();
 
                 foreach (User user in users)
                 {
                     res += $"{user.getName()} ✅\n";
                 }
-                await command.RespondAsync($"Active participants in this TVT game: \n\n{res} \n Current number of players interested: **{users.Count}**");
+                await command.RespondAsync($"Active participants in this TVT game: \n\n{res} \nCurrent number of players interested: **{users.Count}** \nTime until the game starts : **{mins}** minutes\n{finishTime} EST");
             }
             else await command.RespondAsync($"You have no ongoing post", null, false, true);
 
@@ -311,7 +340,15 @@ namespace Discord_Bot.StartUp
         private async Task HandleBalancedCommand(SocketSlashCommand command)
         {
             var value = command.Data.Options.FirstOrDefault().Value;
-            string str = value.ToString().Trim();
+            string strip = value.ToString().Trim();
+            string str = "";
+            for (int i = 0; i < strip.Length; i++)
+            {
+                if (Char.IsLetterOrDigit(strip[i]) || strip[i] == ' ')
+                    str += strip[i];
+            }
+
+
             string[] arr = str.Split(' ', 40); // 20 is the Predetermined max size
             int rating = 0;
             int[] ratings = new int[arr.Length / 2];
@@ -319,7 +356,9 @@ namespace Discord_Bot.StartUp
             int idx = 0;
             int count = 0;
 
-            //if (arr.Length % 2 != 0) await command.RespondAsync($"Please put in an even number of players and ratings. ", null, false, true);
+            
+
+            if (arr.Length % 2 != 0) await command.RespondAsync($"Please put in an even number of players and ratings. ", null, false, true);
             for(int i = 0; i < arr.Length; i++)
             {
                 bool isNumber = Int32.TryParse(arr[i], out rating);
@@ -344,7 +383,8 @@ namespace Discord_Bot.StartUp
             int j = 0;
             foreach(User user in players)
             {
-                user.setRating(ratings[j++]);
+                if (user != null)
+                    user.setRating(ratings[j++]);
             }
 
             RandomHelper helper = new RandomHelper(players);
@@ -356,11 +396,13 @@ namespace Discord_Bot.StartUp
                 int sumB = 0;
                 foreach(User user in teams[i].Item1)
                 {
-                    sumA += user.getRating();
+                    if(user != null)
+                        sumA += user.getRating();
                 }
                 foreach(User user in teams[i].Item2)
                 {
-                    sumB += user.getRating();
+                    if(user != null)
+                        sumB += user.getRating();
                 }
                 int sumDiff = (sumA - sumB) >= 0 ? sumA - sumB : sumB - sumA;
                 dict.Add(i, sumDiff);
@@ -392,7 +434,7 @@ namespace Discord_Bot.StartUp
 
             if (arr.Length % 2 != 0)
             {
-                await command.RespondAsync($"Please input an even number of players.");
+                await command.RespondAsync($"Please input an even number of players.",null,false,true);
             }
             else {
                 foreach (string name in arr)
@@ -416,6 +458,7 @@ namespace Discord_Bot.StartUp
             var value = command.Data.Options.FirstOrDefault().Value;
             string val = value.ToString();
             double v = Convert.ToDouble(val);
+            
             DateTime currTime = DateTime.Now;
             DateTime beforeTime = currTime.AddMinutes(v);
             string timeMsg = $"Game starts in {value} minutes. (__{beforeTime} EST__)."; // Timezone is wherever this program is hosted in
@@ -428,28 +471,42 @@ namespace Discord_Bot.StartUp
             string customId = command.User.Id.ToString();
             var builder = button.Spawn(customId);
             
+            
+            var embed = new EmbedBuilder()
+               .WithFooter(footer => footer.Text = "React to this post to join!")
+               .WithColor(Color.Blue)
+               .WithTitle($"{type} game has been issued by {username}.")
+               .WithDescription($"{timeMsg}")
+               .WithImageUrl(configuration["image"]);
+     
+            await command.RespondAsync(embed:embed.Build(), components: builder.Build());
 
-
-            await command.RespondAsync($"{type} game has been issued by {username}. {timeMsg} React to this to join!", components: builder.Build());
+            //await command.RespondAsync($"{type} game has been issued by {username}. {timeMsg} React to this to join!", embed:embed.Build(), components: builder.Build());
         }
+
 
 
         private async void SendDM(IDMChannel channel, int time)
         {
-
-           await Task.Delay(time);
-           await channel.SendMessageAsync("Your game has started now!");
+            if (time < 0 || time >= Int32.MaxValue) { await channel.SendMessageAsync("Not a valid time"); }
+            else
+            {
+                await Task.Delay(time);
+                await channel.SendMessageAsync("Your game has started now!");
+            }
            
         }
         public async Task MyButtonHandler(SocketMessageComponent component)
         {
             // Get the post's time and subtract it
             ulong id = component.User.Id;
+            //id = component.Message.Interaction.Id;
             IUser user = client.GetUserAsync(id).Result;
             var channel = await user.CreateDMChannelAsync();
 
             // I am a user and i should be involved in the post
-            ulong key = Convert.ToUInt64(component.Data.CustomId);
+            //ulong key = Convert.ToUInt64(component.Data.CustomId);
+            ulong key = component.Message.Interaction.User.Id;
             bool foundUser = false;
             if (dict[key] != null)
             {
@@ -459,8 +516,8 @@ namespace Discord_Bot.StartUp
                     if (id == u.getId())
                     {
                         foundUser = true;
-                    }
-                    break;
+                        break;
+                    }        
                 }
             }
             if (foundUser)
