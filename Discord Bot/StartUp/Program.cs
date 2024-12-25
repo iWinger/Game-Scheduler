@@ -279,10 +279,10 @@ namespace Discord_Bot.StartUp
                     break;
                 case "rules":
                     //Rules on the bot
-                    await command.RespondAsync($"Hello fellow player 😀! These are the commands you can use for this bot: \n\n ***/tvt [minutes]*** \n Sets a Team Vs Team game post in x amount of minutes. People who react to the post display interest in joining, and are also allowed to be notified by the bot through a DM. \n ***/status*** \n Shows the users who reacted to the post and are interested in the game. \n ***/delete*** \n Deletes your current active post. \n ***/repost*** \n Reposts your current active post with the time left to projected game time. \n ***/balanced [player_1 rating_1 ... player_n rating_n]*** \n Creates a list of balanced teams sorted by ascending values in difference between the two teams. Best rating values would range from [0,100]. \n ***/random [player_1 ... player_n]*** \n Creates two sets of random teams. The number of players must be even. \n ***/quote*** \n Gets a random quote from the legendary figure Sun Tzu on the art of warfare.");
+                    await command.RespondAsync($"Hello fellow player 😀! These are the commands you can use for this bot: \n\n ***/tvt [minutes]*** \n __Example:__ /tvt 30 \n Sets a Team Vs Team game post in x amount of minutes. People who react to the post display interest in joining, and are also allowed to be notified by the bot through a DM. \n ***/status*** \n Shows the users who reacted to the post and are interested in the game. \n ***/delete*** \n Deletes your current active post. \n ***/repost*** \n Reposts your current active post with the time left to projected game time. \n ***/balance [player_1 rating_1 ... player_n rating_n]*** \n __Example:__ /balance jack 95 mary 85 joe 65 sarah 55 \n Creates a list of balanced teams sorted by ascending values in difference between the two teams. Best rating values would range from [0,100]. \n ***/random [player_1 ... player_n]*** \n __Example:__ /random jack mary joe sarah \n Creates two sets of random teams. The number of players must be even. \n ***/quote*** \n Gets a random quote from the legendary figure Sun Tzu on the art of warfare.");
                     break;
                 case "help":
-                    await command.RespondAsync($"Hello fellow player 😀! These are the commands you can use for this bot: \n\n ***/tvt [minutes]*** \n Sets a Team Vs Team game post in x amount of minutes. People who react to the post display interest in joining, and are also allowed to be notified by the bot through a DM. \n ***/status*** \n Shows the users who reacted to the post and are interested in the game. \n ***/delete*** \n Deletes your current active post. \n ***/repost*** \n Reposts your current active post with the time left to projected game time. \n ***/balanced [player_1 rating_1 ... player_n rating_n]*** \n Creates a list of balanced teams sorted by ascending values in difference between the two teams. Best rating values would range from [0,100]. \n ***/random [player_1 ... player_n]*** \n Creates two sets of random teams. The number of players must be even. \n ***/quote*** \n Gets a random quote from the legendary figure Sun Tzu on the art of warfare. \n ***/rules*** \n All the commands you need to know for this bot.");
+                    await command.RespondAsync($"Hello fellow player 😀! These are the commands you can use for this bot: \n\n ***/tvt [minutes]*** \n Sets a Team Vs Team game post in x amount of minutes. People who react to the post display interest in joining, and are also allowed to be notified by the bot through a DM. \n ***/status*** \n Shows the users who reacted to the post and are interested in the game. \n ***/delete*** \n Deletes your current active post. \n ***/repost*** \n Reposts your current active post with the time left to projected game time. \n ***/balance [player_1 rating_1 ... player_n rating_n]*** \n Creates a list of balanced teams sorted by ascending values in difference between the two teams. Best rating values would range from [0,100]. \n ***/random [player_1 ... player_n]*** \n Creates two sets of random teams. The number of players must be even. \n ***/quote*** \n Gets a random quote from the legendary figure Sun Tzu on the art of warfare. \n ***/rules*** \n All the commands and examples you need to know for this bot.");
                     break;
                 default:
                     await command.RespondAsync($"Not a valid command", null, false, true);
@@ -355,29 +355,40 @@ namespace Discord_Bot.StartUp
             User[] players = new User[arr.Length / 2];
             int idx = 0;
             int count = 0;
+            bool hasErrors = false;
+            string msg = "";
 
             
+            if (arr.Length % 2 != 0)
+                {
+                    msg = "Please put in an even number of players and ratings. ";
+                    hasErrors = true;
+                    //return Task.CompletedTask;
+                }
 
-            if (arr.Length % 2 != 0) await command.RespondAsync($"Please put in an even number of players and ratings. ", null, false, true);
-            for(int i = 0; i < arr.Length; i++)
+            if (!hasErrors)
             {
-                bool isNumber = Int32.TryParse(arr[i], out rating);
-           
-                if(i % 2 == 0)
+                for (int i = 0; i < arr.Length; i++)
                 {
-                    User user = new User(arr[i]);
-                    players[count++] = user;
-                }
+                    bool isNumber = Int32.TryParse(arr[i], out rating);
 
-                if(i % 2 == 1 && !isNumber)
-                {
-                    await command.RespondAsync($"Please put a rating after each player's name.", null, false, true);
-                    break;
-                }
+                    if (i % 2 == 0)
+                    {
+                        User user = new User(arr[i]);
+                        players[count++] = user;
+                    }
 
-                else if(i % 2 == 1 && isNumber)
-                {
-                    ratings[idx++] = rating;
+                    if (i % 2 == 1 && !isNumber)
+                    {
+                        msg = "Please put a rating after each player's name.";
+                        hasErrors = true;
+                        break;
+                    }
+
+                    else if (i % 2 == 1 && isNumber)
+                    {
+                        ratings[idx++] = rating;
+                    }
                 }
             }
             int j = 0;
@@ -386,42 +397,53 @@ namespace Discord_Bot.StartUp
                 if (user != null)
                     user.setRating(ratings[j++]);
             }
-
-            RandomHelper helper = new RandomHelper(players);
-            List<(List<User>, List<User>)> teams = helper.calculateTeams();
-            Dictionary<int, int> dict = new Dictionary<int, int>(); // Maps each unique index to each sum difference
-            for(int i = 0; i < teams.Count; i++)
+            
+            if (!hasErrors)
             {
-                int sumA = 0;
-                int sumB = 0;
-                foreach(User user in teams[i].Item1)
+
+                RandomHelper helper = new RandomHelper(players);
+                List<(List<User>, List<User>)> teams = helper.calculateTeams();
+                Dictionary<int, int> dict = new Dictionary<int, int>(); // Maps each unique index to each sum difference
+                for (int i = 0; i < teams.Count; i++)
                 {
-                    if(user != null)
-                        sumA += user.getRating();
+                    int sumA = 0;
+                    int sumB = 0;
+                    foreach (User user in teams[i].Item1)
+                    {
+                        if (user != null)
+                            sumA += user.getRating();
+                    }
+                    foreach (User user in teams[i].Item2)
+                    {
+                        if (user != null)
+                            sumB += user.getRating();
+                    }
+                    int sumDiff = (sumA - sumB) >= 0 ? sumA - sumB : sumB - sumA;
+                    dict.Add(i, sumDiff);
                 }
-                foreach(User user in teams[i].Item2)
+                // Now we have each set of team assigned a difference in sums
+                msg = "The ideal balance number is 0. The closer to 0, the more balanced the teams are 😀\n\n";
+                var sortedDict = dict.OrderBy(i => i.Value);
+                int limit = 10; // Instead of number of entries, why not values < 10? 
+                int x = 0;
+                HashSet<int> dups = new HashSet<int>();
+                foreach (KeyValuePair<int, int> pair in sortedDict)
                 {
-                    if(user != null)
-                        sumB += user.getRating();
+                    if (dups.Contains(pair.Value)) continue;
+                    dups.Add(pair.Value);
+                    if (x > limit) break;
+                    (List<User>, List<User>) set = teams[pair.Key];
+                    msg += $"Random Team A: {helper.PrintTeam(set.Item1)} \nRandom Team B: {helper.PrintTeam(set.Item2)} \n **The difference between the two teams in ratings is: {pair.Value}** \n\n";
+                    x++;
                 }
-                int sumDiff = (sumA - sumB) >= 0 ? sumA - sumB : sumB - sumA;
-                dict.Add(i, sumDiff);
+                await command.RespondAsync(msg);
             }
-            // Now we have each set of team assigned a difference in sums
-            string msg = "The ideal balance number is 0. The closer to 0, the more balanced the teams are 😀\n\n";
-            var sortedDict = dict.OrderBy(i => i.Value);
-            int limit = 10; // Instead of number of entries, why not values < 10? 
-            int x = 0;
-            HashSet<int> dups = new HashSet<int>();
-            foreach(KeyValuePair<int,int> pair in sortedDict)
-            {   if (dups.Contains(pair.Value)) continue;
-                dups.Add(pair.Value);
-                if (x > limit) break;
-                (List<User>, List<User>) set = teams[pair.Key];
-                msg += $"Random Team A: {helper.PrintTeam(set.Item1)} \nRandom Team B: {helper.PrintTeam(set.Item2)} \n **The difference between the two teams in ratings is: {pair.Value}** \n\n";
-                x++;
+            else
+            {
+                await command.RespondAsync(msg, null, false, true);
             }
-            await command.RespondAsync(msg);
+
+            
         }
 
         private async Task HandleRandomCommand(SocketSlashCommand command)
