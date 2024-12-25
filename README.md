@@ -1,7 +1,10 @@
 # Game Scheduler 
 
 # About Me
-Meet Game Scheduler, the ultimate companion for gamers and planners alike! 🎮✨ Whether you’re scheduling your next game night, wanting to randomize or balance teams, this bot’s got your back. With the Reminder feature, never miss a game again – get a DM with the exact time when someone posts a game! Finally, enjoy a boost of motivation with thought-provoking quotes whenever you need them. 
+Meet Game Scheduler, the ultimate companion for gamers and planners alike! 🎮✨ Whether you’re scheduling your next game night, wanting to randomize or balance teams, this bot’s got your back. With the Reminder feature, never miss a game again – get a DM with the exact time when someone posts a game! Finally, enjoy a boost of motivation with thought-provoking quotes whenever you need them.
+
+## Technologies Involved
+C#, Discord.NET API, Asynchonous Task-Based Programming (async-await), Sockets, Dependency Injection 
 
 **Set up a post, repost the post, delete the post**
 
@@ -13,14 +16,12 @@ Meet Game Scheduler, the ultimate companion for gamers and planners alike! 🎮�
 
 **Set a reminder for a person via DM that there is an event going on**
 
-![image](https://github.com/user-attachments/assets/9e2c9e24-2579-41cc-8fe3-2a30bf5f4e83)
+![image](https://github.com/user-attachments/assets/9e2c9e24-2579-41cc-8fe3-2a30bf5f4e83) ![image](https://github.com/user-attachments/assets/512a80dd-35ce-4d13-b201-d915327e84bc)
 
-![image](https://github.com/user-attachments/assets/512a80dd-35ce-4d13-b201-d915327e84bc)
 
 **Create a randomizer function that allows you to create two sets of teams with randomness**
 
 ![image](https://github.com/user-attachments/assets/b5eca948-6cc6-4a33-b746-c3fbd5525d78)
-
 
 **A balancer algorithm that will balance the two sets of teams and sort the resulting list from most balanced teams to most unbalanced teams based on player quality rating**
 
