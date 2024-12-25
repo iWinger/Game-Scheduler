@@ -118,19 +118,6 @@ namespace Discord_Bot.StartUp
             //string username = user.GetName();
 
 
-            // We want to compare author of post Id and find the right one
-            /*
-            foreach(KeyValuePair<ulong,Post> item in dict)
-            {
-               
-                if(id == item.Key)
-                {
-                    // Found the right one
-                    key = item.Key;
-                    break;
-                }
-            }
-            */            
      
             if (dict.ContainsKey(key))
             {
@@ -197,8 +184,9 @@ namespace Discord_Bot.StartUp
                 SocketMessage msg = dict[posterId].getMessage();
                 Button button = new Button("Reminder");
                 //string customId = command.User.Id.ToString();
+                var offset = TimeZoneInfo.Local.GetUtcOffset(DateTime.UtcNow);
                 var builder = button.Spawn("custom-id");
-                var timeMsg = $" Game starts in {mins.ToString()} minutes. (__{finishTime} EST__).";
+                var timeMsg = $" Game starts in {mins.ToString()} minutes. (__{finishTime} UTC{offset}__).";
                 if(mins <= 0)
                 {
                     timeMsg = "Game starts in 0 minutes. Game is already happening! ";
@@ -324,6 +312,7 @@ namespace Discord_Bot.StartUp
                 (int x, DateTime y) item = calculateTime(posterId);
                 int mins = item.Item1;
                 DateTime finishTime = item.Item2;
+                var offset = TimeZoneInfo.Local.GetUtcOffset(DateTime.UtcNow);
                 mins = (mins < 0) ? 0 : mins;
                 List<User> users = dict[key].getUsers();
 
@@ -331,7 +320,7 @@ namespace Discord_Bot.StartUp
                 {
                     res += $"{user.getName()} ✅\n";
                 }
-                await command.RespondAsync($"Active participants in this TVT game: \n\n{res} \nCurrent number of players interested: **{users.Count}** \nTime until the game starts : **{mins}** minutes\n{finishTime} EST");
+                await command.RespondAsync($"Active participants in this TVT game: \n\n{res} \nCurrent number of players interested: **{users.Count}** \nTime until the game starts : **{mins}** minutes\n{finishTime} UTC{offset}");
             }
             else await command.RespondAsync($"You have no ongoing post", null, false, true);
 
@@ -480,10 +469,10 @@ namespace Discord_Bot.StartUp
             var value = command.Data.Options.FirstOrDefault().Value;
             string val = value.ToString();
             double v = Convert.ToDouble(val);
-            
+            var offset = TimeZoneInfo.Local.GetUtcOffset(DateTime.UtcNow);
             DateTime currTime = DateTime.Now;
             DateTime beforeTime = currTime.AddMinutes(v);
-            string timeMsg = $"Game starts in {value} minutes. (__{beforeTime} EST__)."; // Timezone is wherever this program is hosted in
+            string timeMsg = $"Game starts in {value} minutes. (__{beforeTime} UTC{offset}__)."; // Timezone is wherever this program is hosted in
            
             timeMsg = value.ToString() == "0" ? "now!" : timeMsg;
 
@@ -492,15 +481,19 @@ namespace Discord_Bot.StartUp
             
             string customId = command.User.Id.ToString();
             var builder = button.Spawn(customId);
+            string art = "art";
+            Random r = new Random();
+            int num = r.Next(5);
             
-            
+
             var embed = new EmbedBuilder()
                .WithFooter(footer => footer.Text = "React to this post to join!")
                .WithColor(Color.Blue)
                .WithTitle($"{type} game has been issued by {username}.")
-               .WithDescription($"{timeMsg}")
-               .WithImageUrl(configuration["image"]);
-     
+               .WithDescription($"{timeMsg}\n" +
+               $"```{configuration[art+num]}```");
+
+
             await command.RespondAsync(embed:embed.Build(), components: builder.Build());
 
             //await command.RespondAsync($"{type} game has been issued by {username}. {timeMsg} React to this to join!", embed:embed.Build(), components: builder.Build());
@@ -605,7 +598,7 @@ namespace Discord_Bot.StartUp
         private async Task UserIsTyping(Cacheable<IUser, ulong> user, Cacheable<IMessageChannel, ulong> channel)
         {
             IMessageChannel chan = await channel.GetOrDownloadAsync();
-            chan.SendMessageAsync("AGG");
+            chan.SendMessageAsync("Hello");
         }
         */
 
