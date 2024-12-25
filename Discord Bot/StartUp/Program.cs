@@ -490,8 +490,8 @@ namespace Discord_Bot.StartUp
                .WithFooter(footer => footer.Text = "React to this post to join!")
                .WithColor(Color.Blue)
                .WithTitle($"{type} game has been issued by {username}.")
-               .WithDescription($"{timeMsg}\n" +
-               $"```{configuration[art+num]}```");
+               .WithDescription($"{timeMsg}\n" + // Randomly generates a ascii art
+               $"```{configuration[art+num]}```"); 
 
 
             await command.RespondAsync(embed:embed.Build(), components: builder.Build());
