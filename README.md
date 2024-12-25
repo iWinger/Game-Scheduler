@@ -14,6 +14,11 @@ C#, Discord.NET API, Asynchonous Task-Based Programming (async-await), Sockets, 
 
 ![image](https://github.com/user-attachments/assets/6b2f1ae0-77f0-4724-8b2e-5f724b569d98)
 
+**Status command to find list of users who reacted to the post**
+
+![image](https://github.com/user-attachments/assets/b70a465d-7e7b-41dc-877e-e83d25785164)
+
+
 **Set a reminder for a person via DM that there is an event going on**
 
 ![image](https://github.com/user-attachments/assets/9e2c9e24-2579-41cc-8fe3-2a30bf5f4e83) ![image](https://github.com/user-attachments/assets/512a80dd-35ce-4d13-b201-d915327e84bc)
