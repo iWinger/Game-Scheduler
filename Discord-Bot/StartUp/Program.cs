@@ -48,7 +48,7 @@ namespace Discord_Bot.StartUp
 
         public async Task StartBotAsync()
         {
-            //Secret value
+            //Secret values
             configuration = new ConfigurationBuilder()
             .AddUserSecrets<Program>()
             .Build();
