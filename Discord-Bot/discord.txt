@@ -1,1 +1,1 @@
-herokua
+heroku

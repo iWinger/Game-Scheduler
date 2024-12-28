@@ -1,0 +1,2 @@
+worker: sh -c 'cd ./ && dotnet bin/Debug/net8.0/GameSchedulerBot.dll'
+

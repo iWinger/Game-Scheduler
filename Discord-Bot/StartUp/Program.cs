@@ -7,6 +7,7 @@ using Discord_Bot.Utility;
 using Discord.Commands;
 using Newtonsoft.Json;
 using Microsoft.Extensions.Configuration;
+using System.ComponentModel;
 
 
 
@@ -21,7 +22,8 @@ namespace Discord_Bot.StartUp
         private User poster { get; set; }
         private string token { get; set; }
         private ulong posterId { get; set; }
-        private int minutes = 0;
+        private int minutes;
+        private ulong guildId;
 
         private IConfigurationRoot configuration;
 
@@ -31,9 +33,11 @@ namespace Discord_Bot.StartUp
             var _config = new DiscordSocketConfig { MessageCacheSize = 200 };
             repository = new Repository();
             dict = repository.GetDict();
+            minutes = 0;
+            guildId = 0;
             client = new DiscordSocketClient(_config);
             client.MessageReceived += MessageHandler;
-            client.Ready += Client_Ready;
+            client.JoinedGuild += JoinHandler;
             client.SlashCommandExecuted += SlashCommandHandler;
             client.ButtonExecuted += MyButtonHandler; // Subscribes to events
             client.ReactionAdded += OnReactionAddedEvent;
@@ -48,22 +52,24 @@ namespace Discord_Bot.StartUp
             configuration = new ConfigurationBuilder()
             .AddUserSecrets<Program>()
             .Build();
-            var token = configuration["token"];
-            await client.LoginAsync(TokenType.Bot, token);
+            // var token = configuration["token"];
+            await client.LoginAsync(TokenType.Bot, Environment.GetEnvironmentVariable("token"));
+            //await client.LoginAsync(TokenType.Bot, token);
             await client.StartAsync();
 
 
-            await Task.Delay(-1); // Makes it run forever
+           await Task.Delay(-1); // Makes it run forever
         }
 
-        public async Task Client_Ready()
+        public async Task JoinHandler(SocketGuild socketGuild)
         {
 
-            foreach (var guild in client.Guilds) {
+                Console.WriteLine("joined");
+                var guild = client.GetGuild(socketGuild.Id);
+            Console.WriteLine(socketGuild.Id);
 
-                
-                //var guild = client.GetGuild(testGuild);
-                var tvtCommand = new SlashCommandBuilder().WithName("tvt").WithDescription("Starting a Team Vs Team game").AddOption("minutes", ApplicationCommandOptionType.String, "the value to set the field", isRequired: true);
+            //var guild = client.GetGuild(testGuild);
+            var tvtCommand = new SlashCommandBuilder().WithName("tvt").WithDescription("Starting a Team Vs Team game").AddOption("minutes", ApplicationCommandOptionType.String, "the value to set the field", isRequired: true);
 
                 var deleteCommand = new SlashCommandBuilder().WithName("delete").WithDescription("Deleting your active post");
 
@@ -84,7 +90,9 @@ namespace Discord_Bot.StartUp
 
                 try
                 {
-                    //await guild.CreateApplicationCommandAsync(tvtCommand.Build());
+                //await guild.CreateApplicationCommandAsync(tvtCommand.Build());
+                if (guild != null)
+                {
                     await guild.CreateApplicationCommandAsync(tvtCommand.Build());
                     await guild.CreateApplicationCommandAsync(deleteCommand.Build());
                     await guild.CreateApplicationCommandAsync(statusCommand.Build());
@@ -94,6 +102,7 @@ namespace Discord_Bot.StartUp
                     await guild.CreateApplicationCommandAsync(quoteCommand.Build());
                     await guild.CreateApplicationCommandAsync(rulesCommand.Build());
                     await guild.CreateApplicationCommandAsync(helpCommand.Build());
+                }
                     //await client.CreateGlobalApplicationCommandAsync(globalCommand.Build());
 
                 }
@@ -103,8 +112,10 @@ namespace Discord_Bot.StartUp
 
                     Console.WriteLine(json);
                 }
-           }
+           
         }
+
+        
 
         private async Task OnReactionAddedEvent(Cacheable<IUserMessage, ulong> cachedMessage, Cacheable<IMessageChannel,ulong> originChannel, SocketReaction reaction)
         {
@@ -138,7 +149,8 @@ namespace Discord_Bot.StartUp
                     dict[key].addUser(user); // Add to dictionary
                 }
             }
-            
+
+            await Task.CompletedTask;
         
         }
       
@@ -288,9 +300,13 @@ namespace Discord_Bot.StartUp
             for(int i = 0; i <= maxLimit; i++)
             {
                 string num = i.ToString();
-                var quote = configuration["quote" + num];
+                //var quote = configuration["quote" + num];
+                var quote = Environment.GetEnvironmentVariable("quote" + num);
                 if (quote != null)
-                    quotes.Add(configuration["quote" + num]);
+                {
+                    quotes.Add(quote);
+                    //quotes.Add(configuration["quote" + num]);
+                }
 
             }
             
@@ -484,6 +500,7 @@ namespace Discord_Bot.StartUp
             string art = "art";
             Random r = new Random();
             int num = r.Next(5);
+            List<string> arts = new List<string> { "   |\\                     /)\r\n /\\_\\\\__               (_//\r\n|   `>\\-`     _._       //`)\r\n \\ /` \\\\  _.-`:::`-._  //\r\n  `    \\|`    :::    `|/\r\n        |     :::     |\r\n        |.....:::.....|\r\n        |:::::::::::::|\r\n        |     :::     |\r\n        \\     :::     /\r\n         \\    :::    /\r\n          `-. ::: .-'\r\n           //`:::`\\\\\r\n          //   '   \\\\\r\n         |/         \\\\", "       .---.\r\n  ___ /_____\\\r\n /\\.-`( '.' )\r\n/ /    \\_-_/_\r\n\\ `-.-\"`'V'//-.\r\n `.__,   |// , \\\r\n     |Ll //Ll|\\ \\\r\n     |__//   | \\_\\\r\n    /---|[]==| / /\r\n    \\__/ |   \\/\\/\r\n    /_   | Ll_\\|\r\n     |`^\"\"\"^`|\r\n     |   |   |\r\n     L___l___J\r\n      |_ | _|\r\n     (___|___)\r", "               /\\_[]_/\\\r\n              |] _||_ [|\r\n       ___     \\/ || \\/\r\n      /___\\       ||\r\n     (|0 0|)      ||\r\n   __/{\\U/}\\_ ___/vvv\r\n  / \\  {~}   / _|_P|\r\n  | /\\  ~   /_/   []\r\n  |_| (____)        \r\n  \\_]/______\\        \r\n     _\\_||_/_           \r\n    (_,_||_,_)", "         /^\\     .\r\n    /\\   \"V\"\r\n   /__\\   I      O  o\r\n  //..\\\\  I     .\r\n  \\].`[/  I\r\n  /l\\/j\\  (]    .  O\r\n /. ~~ ,\\/I          .\r\n \\\\L__j^\\/I       o\r\n  \\/--v}  I     o   .\r\n  |    |  I   _________\r\n  |    |  I c(`       ')o\r\n  |    l  I   \\.     ,/\r\n_/j  L l\\_!  _//^---^\\\\_ ", "      _,.\r\n    ,` -.)\r\n   ( _/-\\\\-._\r\n  /,|`--._,-^|            ,\r\n  \\_| |`-._/||          ,'|\r\n    |  `-, / |         /  /\r\n    |     || |        /  /\r\n     `r-._||/   __   /  /\r\n __,-<_     )`-/  `./  /\r\n'  \\   `---'   \\   /  /\r\n    |           |./  /\r\n    /           //  /\r\n\\_/' \\         |/  /\r\n |    |   _,^-'/  /\r\n |    , ``  (\\/  /_\r\n  \\,.->._    \\X-=/^\r\n  (  /   `-._//^`\r\n" };
             
 
             var embed = new EmbedBuilder()
@@ -491,7 +508,8 @@ namespace Discord_Bot.StartUp
                .WithColor(Color.Blue)
                .WithTitle($"{type} game has been issued by {username}.")
                .WithDescription($"{timeMsg}\n" + // Randomly generates a ascii art
-               $"```{configuration[art+num]}```"); 
+               $"```{arts[num]}```");
+               //$"```{configuration[art+num]}```"); 
 
 
             await command.RespondAsync(embed:embed.Build(), components: builder.Build());
@@ -576,6 +594,8 @@ namespace Discord_Bot.StartUp
                     
                 }
             }
+
+            await Task.CompletedTask;
 
         }
 
