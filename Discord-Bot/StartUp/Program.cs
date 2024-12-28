@@ -64,7 +64,7 @@ namespace Discord_Bot.StartUp
         public async Task JoinHandler(SocketGuild socketGuild)
         {
 
-                Console.WriteLine("join!");
+                Console.WriteLine("joined!");
                 var guild = client.GetGuild(socketGuild.Id);
             Console.WriteLine(socketGuild.Id);
 
