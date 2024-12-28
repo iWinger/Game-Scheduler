@@ -64,9 +64,9 @@ namespace Discord_Bot.StartUp
         public async Task JoinHandler(SocketGuild socketGuild)
         {
 
-                Console.WriteLine("joined");
+              
                 var guild = client.GetGuild(socketGuild.Id);
-            Console.WriteLine(socketGuild.Id);
+         
 
             //var guild = client.GetGuild(testGuild);
             var tvtCommand = new SlashCommandBuilder().WithName("tvt").WithDescription("Starting a Team Vs Team game").AddOption("minutes", ApplicationCommandOptionType.String, "the value to set the field", isRequired: true);
