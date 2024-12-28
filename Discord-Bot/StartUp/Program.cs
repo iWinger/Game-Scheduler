@@ -65,7 +65,7 @@ namespace Discord_Bot.StartUp
         {
 
             var guild = client.GetGuild(socketGuild.Id);
-            Console.WriteLine("SocketGuild id: " + socketGuild.Id);
+            Console.WriteLine("SocketGuild ID: " + socketGuild.Id);
             
 
             //var guild = client.GetGuild(testGuild);
