@@ -35,7 +35,6 @@ namespace Discord_Bot.Utility
             }
         }
         
-
         public List<(List<User>, List<User>)> calculateTeams()
         {
             // Generate combinations of n/2 sets of people
@@ -53,10 +52,8 @@ namespace Discord_Bot.Utility
             {
                 List<int> teamA = list[i].ToList();
                 List<int> teamB = AddOtherTeam(teamA,this.Players.Length);
-                AddBothTeams(teams,teamA, teamB);
-                
+                AddBothTeams(teams,teamA, teamB);       
             }
-
             return teams;
         }
 
@@ -75,9 +72,7 @@ namespace Discord_Bot.Utility
                 }
 
                 (List<User>, List<User>) pair = (A_Team, B_Team);
-                teams.Add(pair);
-
-            
+                teams.Add(pair);  
         }
 
         public string PrintTeam(List<User> team)
@@ -110,7 +105,6 @@ namespace Discord_Bot.Utility
                 }
             }
             return teamB;
-
         }
 
         public (List<User>, List<User>) GetRandomTeam(List<(List<User>, List<User>)> teams)
@@ -121,7 +115,5 @@ namespace Discord_Bot.Utility
             return teams[idx];
 
         }
-
-
     }
 }
